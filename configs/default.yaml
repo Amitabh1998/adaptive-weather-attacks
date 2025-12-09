@@ -1,0 +1,117 @@
+# =============================================================================
+# Default Configuration for Adaptive Weather Attacks
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Paths (will be overwritten in Colab)
+# -----------------------------------------------------------------------------
+paths:
+  data_dir: "/content/GTSRB_dataset"
+  checkpoint_dir: "/content/adaptive-weather-attacks/checkpoints"
+  results_dir: "/content/adaptive-weather-attacks/results"
+  outputs_dir: "/content/adaptive-weather-attacks/outputs"
+
+# -----------------------------------------------------------------------------
+# Dataset Settings
+# -----------------------------------------------------------------------------
+dataset:
+  name: "gtsrb"
+  num_classes: 43
+  image_size: 224
+  val_split: 0.1
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+
+# -----------------------------------------------------------------------------
+# Model Settings
+# -----------------------------------------------------------------------------
+models:
+  architectures: ["resnet50", "efficientnet_b0", "vit"]
+  pretrained: true
+
+# -----------------------------------------------------------------------------
+# Training Settings
+# -----------------------------------------------------------------------------
+training:
+  batch_size: 64
+  num_epochs: 10
+  learning_rate: 0.001
+  weight_decay: 0.0001
+  scheduler: "cosine"
+  early_stopping:
+    enabled: true
+    patience: 5
+    min_delta: 0.001
+
+# -----------------------------------------------------------------------------
+# Pixel Attack Settings
+# -----------------------------------------------------------------------------
+attacks:
+  fgsm:
+    eps: 0.03
+  pgd:
+    eps: 0.03
+    alpha: 0.01
+    steps: 10
+  cw:
+    c: 1
+    kappa: 0
+    steps: 1000
+    lr: 0.01
+
+# -----------------------------------------------------------------------------
+# Diffusion Settings
+# -----------------------------------------------------------------------------
+diffusion:
+  model_id: "runwayml/stable-diffusion-v1-5"
+  num_inference_steps: 30
+  strength: 0.5
+  
+# -----------------------------------------------------------------------------
+# Variable CFG Settings (Main Contribution)
+# -----------------------------------------------------------------------------
+variable_cfg:
+  schedules: ["constant", "linear", "cosine", "step"]
+  
+  constant:
+    guidance_scale: 7.5
+  
+  linear:
+    guidance_scale_start: 12.0
+    guidance_scale_end: 3.0
+  
+  cosine:
+    guidance_scale_start: 12.0
+    guidance_scale_end: 3.0
+  
+  step:
+    guidance_scale_high: 12.0
+    guidance_scale_low: 3.0
+    transition_step: 0.5  # fraction of total steps
+
+# -----------------------------------------------------------------------------
+# Weather Prompts
+# -----------------------------------------------------------------------------
+weather:
+  categories:
+    fog: ["in dense fog", "in thick fog", "in heavy fog"]
+    rain: ["in heavy rain", "in rainstorm", "in rain with wet reflections"]
+    snow: ["in thick snow", "in blizzard", "in snowstorm"]
+    night: ["at night", "at night under streetlights", "in darkness"]
+    glare: ["in harsh sunlight with glare", "with lens flare", "in bright sunlight"]
+
+# -----------------------------------------------------------------------------
+# Experiment Settings
+# -----------------------------------------------------------------------------
+experiment:
+  num_samples: 100  # Number of images to attack
+  seed: 42
+  save_images: true
+  
+# -----------------------------------------------------------------------------
+# Hardware Settings
+# -----------------------------------------------------------------------------
+hardware:
+  device: "cuda"
+  num_workers: 4
+  pin_memory: true
