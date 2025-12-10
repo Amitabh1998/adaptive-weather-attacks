@@ -1,110 +1,65 @@
 """
-Data transforms and augmentation for traffic sign images.
+Image transforms for GTSRB dataset.
 """
 
 from torchvision import transforms
 
-from ..config import IMAGE_SIZE, MEAN, STD
+# ImageNet normalization (used for pretrained models)
+IMAGENET_MEAN = [0.485, 0.456, 0.406]
+IMAGENET_STD = [0.229, 0.224, 0.225]
+
+IMAGE_SIZE = 224
 
 
-def get_train_transforms() -> transforms.Compose:
+def get_train_transforms():
     """
     Get training transforms with data augmentation.
     
     Returns:
-        Composed transform for training images
+        torchvision.transforms.Compose
     """
     return transforms.Compose([
         transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomAffine(
-            degrees=15,
-            translate=(0.1, 0.1),
-            scale=(0.9, 1.1),
-            shear=10
-        ),
-        transforms.ColorJitter(
-            brightness=0.2,
-            contrast=0.2,
-            saturation=0.2,
-            hue=0.1
-        ),
+        transforms.RandomHorizontalFlip(p=0.3),
+        transforms.RandomRotation(10),
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
         transforms.ToTensor(),
-        transforms.Normalize(mean=MEAN, std=STD),
+        transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
     ])
 
 
-def get_test_transforms() -> transforms.Compose:
+def get_test_transforms():
     """
     Get test/validation transforms (no augmentation).
     
     Returns:
-        Composed transform for test/validation images
+        torchvision.transforms.Compose
     """
     return transforms.Compose([
         transforms.Resize((IMAGE_SIZE, IMAGE_SIZE)),
         transforms.ToTensor(),
-        transforms.Normalize(mean=MEAN, std=STD),
+        transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD),
     ])
 
 
-def get_denormalize_transform() -> transforms.Compose:
+def get_unnormalize_transform():
     """
-    Get transform to convert normalized tensor back to displayable image.
+    Get transform to unnormalize images back to [0, 1] range.
     
     Returns:
-        Transform to denormalize images
+        torchvision.transforms.Compose
     """
-    inv_mean = [-m / s for m, s in zip(MEAN, STD)]
-    inv_std = [1 / s for s in STD]
-    
-    return transforms.Compose([
-        transforms.Normalize(mean=[0, 0, 0], std=inv_std),
-        transforms.Normalize(mean=inv_mean, std=[1, 1, 1]),
-    ])
+    return transforms.Normalize(
+        mean=[-m/s for m, s in zip(IMAGENET_MEAN, IMAGENET_STD)],
+        std=[1/s for s in IMAGENET_STD]
+    )
 
 
-def denormalize_image(tensor):
-    """
-    Denormalize a single image tensor for visualization.
-    
-    Args:
-        tensor: Normalized image tensor [C, H, W]
-        
-    Returns:
-        Denormalized numpy array [H, W, C] in range [0, 1]
-    """
-    import numpy as np
-    import torch
-    
-    if isinstance(tensor, torch.Tensor):
-        tensor = tensor.clone().detach().cpu()
-    
-    # Denormalize
-    for t, m, s in zip(tensor, MEAN, STD):
-        t.mul_(s).add_(m)
-    
-    # Clamp and convert
-    tensor = torch.clamp(tensor, 0, 1)
-    
-    # Convert to numpy [H, W, C]
-    return tensor.permute(1, 2, 0).numpy()
-
-
-def tensor_to_pil(tensor):
-    """
-    Convert a normalized tensor to PIL Image.
-    
-    Args:
-        tensor: Normalized image tensor [C, H, W]
-        
-    Returns:
-        PIL Image
-    """
-    from PIL import Image
-    import numpy as np
-    
-    img_np = denormalize_image(tensor)
-    img_np = (img_np * 255).astype(np.uint8)
-    
-    return Image.fromarray(img_np)
+__all__ = [
+    'get_train_transforms',
+    'get_test_transforms',
+    'get_unnormalize_transform',
+    'IMAGENET_MEAN',
+    'IMAGENET_STD',
+    'IMAGE_SIZE',
+]
